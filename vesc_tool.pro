@@ -287,7 +287,10 @@ DISTFILES += \
     android/build.gradle \
     android/gradle/wrapper/gradle-wrapper.properties \
     android/src/com/vedder/vesc/VForegroundService.java \
-    android/src/com/vedder/vesc/Utils.java
+    android/src/com/vedder/vesc/Utils.java \
+    res/config/6.69/info.xml \
+    res/config/6.69/parameters_appconf.xml \
+    res/config/6.69/parameters_mcconf.xml
 
 ANDROID_PACKAGE_SOURCE_DIR = $$PWD/android
 
