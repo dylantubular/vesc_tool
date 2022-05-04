@@ -40,7 +40,8 @@ typedef enum {
     CFG_T_INT,
     CFG_T_QSTRING,
     CFG_T_ENUM,
-    CFG_T_BOOL
+    CFG_T_BOOL,
+    CFG_T_BITFIELD
 } CFG_T;
 
 typedef enum {
@@ -97,7 +98,8 @@ typedef enum {
     FAULT_CODE_FLASH_CORRUPTION_APP_CFG,
     FAULT_CODE_FLASH_CORRUPTION_MC_CFG,
     FAULT_CODE_ENCODER_NO_MAGNET,
-    FAULT_CODE_ENCODER_MAGNET_TOO_STRONG
+    FAULT_CODE_ENCODER_MAGNET_TOO_STRONG,
+    FAULT_CODE_PHASE_FILTER
 } mc_fault_code;
 
 typedef enum {
@@ -564,6 +566,7 @@ struct FW_RX_PARAMS {
 
     Q_PROPERTY(int major MEMBER major)
     Q_PROPERTY(int minor MEMBER minor)
+    Q_PROPERTY(QString fwName MEMBER fwName)
     Q_PROPERTY(QString hw MEMBER hw)
     Q_PROPERTY(QByteArray uuid MEMBER uuid)
     Q_PROPERTY(bool isPaired MEMBER isPaired)
@@ -615,6 +618,7 @@ public:
 
     int major;
     int minor;
+    QString fwName;
     QString hw;
     QByteArray uuid;
     bool isPaired;

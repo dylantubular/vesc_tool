@@ -1,11 +1,5 @@
-(define rate 50) ; Update rate in hz
-
-(defun f ()
+(loopwhile t
     (progn
-        ; Put your code here
-
-        (yield (/ 1000000 rate))
-        (f)
+        (print "Hello World")
+        (sleep 1.5)
 ))
-
-(f)

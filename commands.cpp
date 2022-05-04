@@ -152,6 +152,10 @@ void Commands::processPacket(QByteArray data)
             params.nrfPinSupported = nrfFlags & 2;
         }
 
+        if (vb.size() >= 1) {
+            params.fwName = vb.vbPopFrontString();
+        }
+
         emit fwVersionReceived(params);
     } break;
 
@@ -2198,6 +2202,7 @@ QString Commands::faultToStr(mc_fault_code fault)
     case FAULT_CODE_FLASH_CORRUPTION_MC_CFG: return "FAULT_CODE_FLASH_CORRUPTION_MC_CFG";
     case FAULT_CODE_ENCODER_NO_MAGNET: return "FAULT_CODE_ENCODER_NO_MAGNET";
     case FAULT_CODE_ENCODER_MAGNET_TOO_STRONG: return "FAULT_CODE_ENCODER_MAGNET_TOO_STRONG";
+    case FAULT_CODE_PHASE_FILTER: return "FAULT_CODE_PHASE_FILTER";
     }
 
     return "Unknown fault";

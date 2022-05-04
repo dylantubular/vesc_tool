@@ -193,6 +193,7 @@ VescInterface::VescInterface(QObject *parent) : QObject(parent)
         setLastConnectionType(CONN_BLE);
         mSettings.setValue("ble_addr", mLastBleAddr);
     });
+    connect(mBleUart, SIGNAL(unintentionalDisconnect()), this, SLOT(bleUnintentionalDisconnect()));
 #endif
 
     mTcpServer = new TcpServerSimple(this);
@@ -256,8 +257,11 @@ VescInterface::VescInterface(QObject *parent) : QObject(parent)
         }
         mSettings.endArray();
     }
+    
+    QLocale systemLocale;
+    bool useImperialByDefault = systemLocale.measurementSystem() == QLocale::ImperialSystem;
 
-    mUseImperialUnits = mSettings.value("useImperialUnits", false).toBool();
+    mUseImperialUnits = mSettings.value("useImperialUnits", useImperialByDefault).toBool();
     mKeepScreenOn = mSettings.value("keepScreenOn", true).toBool();
     mUseWakeLock = mSettings.value("useWakeLock", false).toBool();
     mLoadQmlUiOnConnect = mSettings.value("loadQmlUiOnConnect", true).toBool();
@@ -2899,6 +2903,11 @@ void VescInterface::udpInputError(QAbstractSocket::SocketError socketError)
 void VescInterface::bleDataRx(QByteArray data)
 {
     mPacket->processData(data);
+}
+
+void VescInterface::bleUnintentionalDisconnect()
+{
+   emit unintentionalBleDisconnect();
 }
 #endif
 

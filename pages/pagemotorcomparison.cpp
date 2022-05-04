@@ -207,6 +207,8 @@ PageMotorComparison::PageMotorComparison(QWidget *parent) :
             [this](bool checked) { (void)checked; settingChanged(); });
     connect(ui->testNegativeBox, &QCheckBox::toggled,
             [this](bool checked) { (void)checked; settingChanged(); });
+    connect(ui->scatterPlotBox, &QCheckBox::toggled,
+            [this](bool checked) { (void)checked; settingChanged(); });
 
     connect(ui->testRpmBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             [this](double value) { (void)value; settingChanged(); });
@@ -219,6 +221,8 @@ PageMotorComparison::PageMotorComparison(QWidget *parent) :
     connect(ui->testExpBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             [this](double value) { (void)value; settingChanged(); });
     connect(ui->testExpBaseTorqueBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            [this](double value) { (void)value; settingChanged(); });
+    connect(ui->pointsBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
             [this](double value) { (void)value; settingChanged(); });
 
     connect(ui->m1GearingBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
@@ -335,6 +339,8 @@ PageMotorComparison::PageMotorComparison(QWidget *parent) :
     addDataItemBoth("RPM Shaft");
     addDataItemBoth("ExtraVal");
     addDataItemBoth("ExtraVal2");
+    addDataItemBoth("ExtraVal3");
+    addDataItemBoth("ExtraVal4");
     addDataItemBoth("ERPM", false);
     addDataItemBoth("km/h", false);
     addDataItemBoth("mph", false);
@@ -393,6 +399,10 @@ void PageMotorComparison::settingChanged()
     ui->testRpmStartBox->setEnabled(ui->testModeRpmPowerButton->isChecked() || ui->testModeExpButton->isChecked());
     ui->testExpBox->setEnabled(ui->testModeExpButton->isChecked());
     ui->testExpBaseTorqueBox->setEnabled(ui->testModeExpButton->isChecked());
+
+    if (ui->tabWidget->currentIndex() == 1) {
+        setQmlMotorParams();
+    }
 
     if (ui->testLiveUpdateBox->isChecked()) {
         on_testRunButton_clicked();
@@ -472,6 +482,8 @@ void PageMotorComparison::updateDataAndPlot(double posx, double yMin, double yMa
         table->item(ind++, 1)->setText(QString::number(md.rpm_motor_shaft, 'f', 1));
         table->item(ind++, 1)->setText(QString::number(md.extraVal, 'f', 1));
         table->item(ind++, 1)->setText(QString::number(md.extraVal2, 'f', 1));
+        table->item(ind++, 1)->setText(QString::number(md.extraVal3, 'f', 1));
+        table->item(ind++, 1)->setText(QString::number(md.extraVal4, 'f', 1));
         table->item(ind++, 1)->setText(QString::number(md.erpm, 'f', 1));
         table->item(ind++, 1)->setText(QString::number(md.km_h, 'f', 1) + " km/h");
         table->item(ind++, 1)->setText(QString::number(md.mph, 'f', 1) + " mph");
@@ -488,36 +500,48 @@ void PageMotorComparison::updateDataAndPlot(double posx, double yMin, double yMa
     if (ui->tabWidget->currentIndex() == 1) {
         auto param = getQmlParam(posx);
         MotorData md;
-        md.update(mM1Config, param.rpmM1, param.torqueM1, getParamsUi(1));
+        md.configure(&mM1Config, getParamsUi(1));
+        md.update(param.rpmM1, param.torqueM1);
         md.extraVal = param.extraM1;
         md.extraVal2 = param.extraM1_2;
+        md.extraVal3 = param.extraM1_3;
+        md.extraVal4 = param.extraM1_4;
         updateTable(md, ui->m1PlotTable);
-        md.update(mM2Config, param.rpmM2, param.torqueM2, getParamsUi(2));
+        md.configure(&mM2Config, getParamsUi(2));
+        md.update(param.rpmM2, param.torqueM2);
         md.extraVal = param.extraM2;
         md.extraVal2 = param.extraM2_2;
+        md.extraVal3 = param.extraM2_3;
+        md.extraVal4 = param.extraM2_4;
         updateTable(md, ui->m2PlotTable);
         setQmlProgressSelected(posx);
     } else  {
         if (ui->testModeTorqueButton->isChecked()) {
             MotorData md;
-            md.update(mM1Config, ui->testRpmBox->value(), posx, getParamsUi(1));
+            md.configure(&mM1Config, getParamsUi(1));
+            md.update(ui->testRpmBox->value(), posx);
             updateTable(md, ui->m1PlotTable);
-            md.update(mM2Config, ui->testRpmBox->value(), posx, getParamsUi(2));
+            md.configure(&mM2Config, getParamsUi(2));
+            md.update(ui->testRpmBox->value(), posx);
             updateTable(md, ui->m2PlotTable);
         } else if (ui->testModeRpmButton->isChecked()) {
             MotorData md;
-            md.update(mM1Config, posx, ui->testTorqueBox->value(), getParamsUi(1));
+            md.configure(&mM1Config, getParamsUi(1));
+            md.update(posx, ui->testTorqueBox->value());
             updateTable(md, ui->m1PlotTable);
-            md.update(mM2Config, posx, ui->testTorqueBox->value(), getParamsUi(2));
+            md.configure(&mM2Config, getParamsUi(2));
+            md.update(posx, ui->testTorqueBox->value());
             updateTable(md, ui->m2PlotTable);
         } else if (ui->testModeRpmPowerButton->isChecked()) {
             double rps = posx * 2.0 * M_PI / 60.0;
             double torque = ui->testPowerBox->value() / rps;
 
             MotorData md;
-            md.update(mM1Config, posx, torque, getParamsUi(1));
+            md.configure(&mM1Config, getParamsUi(1));
+            md.update(posx, torque);
             updateTable(md, ui->m1PlotTable);
-            md.update(mM2Config, posx, torque, getParamsUi(2));
+            md.configure(&mM2Config, getParamsUi(2));
+            md.update(posx, torque);
             updateTable(md, ui->m2PlotTable);
         } else {
             double rpm_start = ui->testRpmStartBox->value();
@@ -531,17 +555,19 @@ void PageMotorComparison::updateDataAndPlot(double posx, double yMin, double yMa
             torque += baseTorque;
 
             MotorData md;
-            md.update(mM1Config, posx, torque, getParamsUi(1));
+            md.configure(&mM1Config, getParamsUi(1));
+            md.update(posx, torque);
             updateTable(md, ui->m1PlotTable);
-            md.update(mM2Config, posx, torque, getParamsUi(2));
+            md.configure(&mM2Config, getParamsUi(2));
+            md.update(posx, torque);
             updateTable(md, ui->m2PlotTable);
         }
     }
 }
 
-PageMotorComparison::TestParams PageMotorComparison::getParamsUi(int motor)
+MotorDataParams PageMotorComparison::getParamsUi(int motor)
 {
-    TestParams sel;
+    MotorDataParams sel;
 
     if (motor == 1) {
         sel.gearing = ui->m1GearingBox->value();
@@ -694,11 +720,23 @@ void PageMotorComparison::on_testRunButton_clicked()
                 yAxes[rowInd].append(md.extraVal2 * rowScale);
                 names.append(namePrefix + QString("(Unit * %1)").arg(rowScale));
                 rowInd++; break;
+            case 20:
+                if (yAxes.size() <= rowInd) yAxes.append(QVector<double>());
+                yAxes[rowInd].append(md.extraVal3 * rowScale);
+                names.append(namePrefix + QString("(Unit * %1)").arg(rowScale));
+                rowInd++; break;
+            case 21:
+                if (yAxes.size() <= rowInd) yAxes.append(QVector<double>());
+                yAxes[rowInd].append(md.extraVal4 * rowScale);
+                names.append(namePrefix + QString("(Unit * %1)").arg(rowScale));
+                rowInd++; break;
             default:
                 break;
             }
         }
     };
+
+    double plotPoints = ui->pointsBox->value();
 
     auto updateGraphs = [this](
             QVector<double> &xAxis,
@@ -757,6 +795,9 @@ void PageMotorComparison::on_testRunButton_clicked()
 
             ui->plot->addGraph();
             ui->plot->graph(graphNow)->setPen(pen);
+            if (ui->scatterPlotBox->isChecked()) {
+                ui->plot->graph(graphNow)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 5));
+            }
             ui->plot->graph(graphNow)->setName(names.at(i));
             ui->plot->graph(graphNow)->setData(xAxis, yAxes.at(i));
         }
@@ -768,8 +809,8 @@ void PageMotorComparison::on_testRunButton_clicked()
         ui->plot->replotWhenVisible();
     };
 
-    auto plotTorqueSweep = [this, updateData, updateGraphs](QTableWidget *table,
-            ConfigParams &config, TestParams param) {
+    auto plotTorqueSweep = [this, updateData, updateGraphs, plotPoints](QTableWidget *table,
+            ConfigParams &config, MotorDataParams param) {
         double torque = fabs(ui->testTorqueBox->value());
         double rpm = ui->testRpmBox->value();
 
@@ -779,12 +820,13 @@ void PageMotorComparison::on_testRunButton_clicked()
 
         double torque_start = -torque;
         if (!ui->testNegativeBox->isChecked()) {
-            torque_start = torque / 1000.0;
+            torque_start = torque / plotPoints;
         }
 
-        for (double t = torque_start;t < torque;t += (torque / 1000.0)) {
+        for (double t = torque_start;t < torque;t += (torque / plotPoints)) {
             MotorData md;
-            md.update(config, rpm, t, param);
+            md.configure(&config, param);
+            md.update(rpm, t);
             xAxis.append(t);
             updateData(md, table, yAxes, names);
 
@@ -798,8 +840,8 @@ void PageMotorComparison::on_testRunButton_clicked()
         updateGraphs(xAxis, yAxes, names);
     };
 
-    auto plotRpmSweep = [this, updateData, updateGraphs](QTableWidget *table,
-            ConfigParams &config, TestParams param) {
+    auto plotRpmSweep = [this, updateData, updateGraphs, plotPoints](QTableWidget *table,
+            ConfigParams &config, MotorDataParams param) {
         double torque = ui->testTorqueBox->value();
         double rpm = ui->testRpmBox->value();
 
@@ -809,12 +851,13 @@ void PageMotorComparison::on_testRunButton_clicked()
 
         double rpm_start = -rpm;
         if (!ui->testNegativeBox->isChecked()) {
-            rpm_start = rpm / 1000.0;
+            rpm_start = rpm / plotPoints;
         }
 
-        for (double r = rpm_start;r < rpm;r += (rpm / 1000.0)) {
+        for (double r = rpm_start;r < rpm;r += (rpm / plotPoints)) {
             MotorData md;
-            md.update(config, r, torque, param);
+            md.configure(&config, param);
+            md.update(r, torque);
             xAxis.append(r);
             updateData(md, table, yAxes, names);
 
@@ -827,8 +870,8 @@ void PageMotorComparison::on_testRunButton_clicked()
         updateGraphs(xAxis, yAxes, names);
     };
 
-    auto plotPowerSweep = [this, updateData, updateGraphs](QTableWidget *table,
-            ConfigParams &config, TestParams param) {
+    auto plotPowerSweep = [this, updateData, updateGraphs, plotPoints](QTableWidget *table,
+            ConfigParams &config, MotorDataParams param) {
         double rpm = ui->testRpmBox->value();
         double rpm_start = ui->testRpmStartBox->value();
         double power = ui->testPowerBox->value();
@@ -837,12 +880,13 @@ void PageMotorComparison::on_testRunButton_clicked()
         QVector<QVector<double> > yAxes;
         QVector<QString> names;
 
-        for (double r = rpm_start;r < rpm;r += (rpm / 1000.0)) {
+        for (double r = rpm_start;r < rpm;r += (rpm / plotPoints)) {
             double rps = r * 2.0 * M_PI / 60.0;
             double torque = power / rps;
 
             MotorData md;
-            md.update(config, r, torque, param);
+            md.configure(&config, param);
+            md.update(r, torque);
             xAxis.append(r);
             updateData(md, table, yAxes, names);
 
@@ -855,8 +899,8 @@ void PageMotorComparison::on_testRunButton_clicked()
         updateGraphs(xAxis, yAxes, names);
     };
 
-    auto plotPropSweep = [this, updateData, updateGraphs](QTableWidget *table,
-            ConfigParams &config, TestParams param) {
+    auto plotPropSweep = [this, updateData, updateGraphs, plotPoints](QTableWidget *table,
+            ConfigParams &config, MotorDataParams param) {
         double rpm = ui->testRpmBox->value();
         double power = ui->testPowerBox->value();
         double prop_exp = ui->testExpBox->value();
@@ -868,14 +912,15 @@ void PageMotorComparison::on_testRunButton_clicked()
         QVector<QVector<double> > yAxes;
         QVector<QString> names;
 
-        for (double r = rpm / 1000.0;r < rpm;r += (rpm / 1000.0)) {
+        for (double r = rpm / plotPoints;r < rpm;r += (rpm / plotPoints)) {
             double rps = r * 2.0 * M_PI / 60.0;
             double power = p_max_const * pow(r > rpm_start ? (r - rpm_start) : 0.0, prop_exp);
             double torque = power / rps;
             torque += baseTorque;
 
             MotorData md;
-            md.update(config, r, torque, param);
+            md.configure(&config, param);
+            md.update(r, torque);
             xAxis.append(r);
             updateData(md, table, yAxes, names);
 
@@ -888,8 +933,8 @@ void PageMotorComparison::on_testRunButton_clicked()
         updateGraphs(xAxis, yAxes, names);
     };
 
-    auto plotQmlSweep = [this, updateData, updateGraphs](QTableWidget *table,
-            ConfigParams &config, TestParams param, int motor) {
+    auto plotQmlSweep = [this, updateData, updateGraphs, plotPoints](QTableWidget *table,
+            ConfigParams &config, MotorDataParams param, int motor) {
 
         QVector<double> xAxis;
         QVector<QVector<double> > yAxes;
@@ -897,19 +942,24 @@ void PageMotorComparison::on_testRunButton_clicked()
         double min = getQmlXMin();
         double max = getQmlXMax();
 
-        for (double p = min; p < max; p += (max - min) / 1000.0) {
+        for (double p = min; p < max; p += (max - min) / plotPoints) {
             auto rpmTorque = getQmlParam(p);
 
             MotorData md;
+            md.configure(&config, param);
 
             if (motor == 1) {
-                md.update(config, rpmTorque.rpmM1, rpmTorque.torqueM1, param);
+                md.update(rpmTorque.rpmM1, rpmTorque.torqueM1);
                 md.extraVal = rpmTorque.extraM1;
                 md.extraVal2 = rpmTorque.extraM1_2;
+                md.extraVal3 = rpmTorque.extraM1_3;
+                md.extraVal4 = rpmTorque.extraM1_4;
             } else {
-                md.update(config, rpmTorque.rpmM2, rpmTorque.torqueM2, param);
+                md.update(rpmTorque.rpmM2, rpmTorque.torqueM2);
                 md.extraVal = rpmTorque.extraM2;
                 md.extraVal2 = rpmTorque.extraM2_2;
+                md.extraVal3 = rpmTorque.extraM2_3;
+                md.extraVal4 = rpmTorque.extraM2_4;
             }
 
             xAxis.append(p);
@@ -989,6 +1039,9 @@ void PageMotorComparison::on_qmlRunButton_clicked()
     QTimer::singleShot(500, [this]() {
         connect(ui->qmlWidget->rootObject()->findChild<QObject*>("idComp"),
                 SIGNAL(testChanged()), this, SLOT(qmlTestChanged()));
+        connect(ui->qmlWidget->rootObject()->findChild<QObject*>("idComp"),
+                SIGNAL(namesUpdated()), this, SLOT(qmlNamesUpdated()));
+        setQmlMotorParams();
         on_testRunButton_clicked();
     });
 
@@ -998,6 +1051,7 @@ void PageMotorComparison::on_qmlRunButton_clicked()
     mQmlXMinOk = true;
     mQmlXMaxOk = true;
     mQmlProgressOk = true;
+    mQmlMotorParamsOk = true;
     mQmlReadNamesDone = false;
 }
 
@@ -1010,6 +1064,13 @@ void PageMotorComparison::qmlTestChanged()
 {
     QTimer::singleShot(0, [this]() {
         on_testRunButton_clicked();
+    });
+}
+
+void PageMotorComparison::qmlNamesUpdated()
+{
+    QTimer::singleShot(0, [this]() {
+        qmlUpdateNames();
     });
 }
 
@@ -1045,51 +1106,87 @@ PageMotorComparison::QmlParams PageMotorComparison::getQmlParam(double progress)
         res.extraM1_2 = list.at(3).toDouble();
     }
 
-    if (list.size() >= 8) {
-        res.rpmM2 = list.at(4).toDouble();
-        res.torqueM2 = list.at(5).toDouble();
-        res.extraM2 = list.at(6).toDouble();
-        res.extraM2_2 = list.at(7).toDouble();
+    if (list.size() >= 5) {
+        res.extraM1_3 = list.at(4).toDouble();
+    }
+
+    if (list.size() >= 6) {
+        res.extraM1_4 = list.at(5).toDouble();
+    }
+
+    if (list.size() >= 12) {
+        res.rpmM2 = list.at(6).toDouble();
+        res.torqueM2 = list.at(7).toDouble();
+        res.extraM2 = list.at(8).toDouble();
+        res.extraM2_2 = list.at(9).toDouble();
+        res.extraM2_3 = list.at(10).toDouble();
+        res.extraM2_4 = list.at(11).toDouble();
     } else {
         res.rpmM2 = res.rpmM1;
         res.torqueM2 = res.torqueM1;
-        res.extraM2 = 0.0;
-        res.extraM2_2 = 0.0;
+        res.extraM2 = res.extraM1;
+        res.extraM2_2 = res.extraM1_2;
+        res.extraM2_3 = res.extraM1_3;
+        res.extraM2_4 = res.extraM1_4;
     }
 
     if (!mQmlReadNamesDone) {
         mQmlReadNamesDone = true;
-
-        ok = QMetaObject::invokeMethod(ui->qmlWidget->rootObject()->findChild<QObject*>("idComp"),
-                                            "extraNames",
-                                            Q_RETURN_ARG(QVariant, returnedValue));
-
-        if (ok) {
-            ok = returnedValue.canConvert(QMetaType::QVariantList);
-        }
-
-        if (ok) {
-            list = returnedValue.toList();
-
-            if (list.size() >= 1 && list.at(0).canConvert(QMetaType::QString)) {
-                ui->m1PlotTable->item(18, 0)->setText(list.at(0).toString());
-            }
-
-            if (list.size() >= 2 && list.at(1).canConvert(QMetaType::QString)) {
-                ui->m1PlotTable->item(19, 0)->setText(list.at(1).toString());
-            }
-
-            if (list.size() >= 3 && list.at(2).canConvert(QMetaType::QString)) {
-                ui->m2PlotTable->item(18, 0)->setText(list.at(2).toString());
-            }
-
-            if (list.size() >= 4 && list.at(3).canConvert(QMetaType::QString)) {
-                ui->m2PlotTable->item(19, 0)->setText(list.at(3).toString());
-            }
-        }
+        qmlUpdateNames();
     }
 
     return res;
+}
+
+bool PageMotorComparison::qmlUpdateNames()
+{
+    QVariant returnedValue;
+
+    bool ok = QMetaObject::invokeMethod(ui->qmlWidget->rootObject()->findChild<QObject*>("idComp"),
+                                   "extraNames",
+                                   Q_RETURN_ARG(QVariant, returnedValue));
+
+    if (ok) {
+        ok = returnedValue.canConvert(QMetaType::QVariantList);
+    }
+
+    if (ok) {
+        auto list = returnedValue.toList();
+
+        if (list.size() >= 1 && list.at(0).canConvert(QMetaType::QString)) {
+            ui->m1PlotTable->item(18, 0)->setText(list.at(0).toString());
+        }
+
+        if (list.size() >= 2 && list.at(1).canConvert(QMetaType::QString)) {
+            ui->m1PlotTable->item(19, 0)->setText(list.at(1).toString());
+        }
+
+        if (list.size() >= 3 && list.at(2).canConvert(QMetaType::QString)) {
+            ui->m1PlotTable->item(20, 0)->setText(list.at(2).toString());
+        }
+
+        if (list.size() >= 4 && list.at(3).canConvert(QMetaType::QString)) {
+            ui->m1PlotTable->item(21, 0)->setText(list.at(3).toString());
+        }
+
+        if (list.size() >= 5 && list.at(4).canConvert(QMetaType::QString)) {
+            ui->m2PlotTable->item(18, 0)->setText(list.at(4).toString());
+        }
+
+        if (list.size() >= 6 && list.at(5).canConvert(QMetaType::QString)) {
+            ui->m2PlotTable->item(19, 0)->setText(list.at(5).toString());
+        }
+
+        if (list.size() >= 7 && list.at(6).canConvert(QMetaType::QString)) {
+            ui->m2PlotTable->item(20, 0)->setText(list.at(6).toString());
+        }
+
+        if (list.size() >= 8 && list.at(7).canConvert(QMetaType::QString)) {
+            ui->m2PlotTable->item(21, 0)->setText(list.at(7).toString());
+        }
+    }
+
+    return ok;
 }
 
 QString PageMotorComparison::getQmlXName()
@@ -1170,9 +1267,19 @@ void PageMotorComparison::setQmlProgressSelected(double progress)
         return;
     }
 
-    bool ok = QMetaObject::invokeMethod(ui->qmlWidget->rootObject()->findChild<QObject*>("idComp"),
-                                        "progressSelected",
-                                        Q_ARG(QVariant, progress));
+    mQmlProgressOk = QMetaObject::invokeMethod(ui->qmlWidget->rootObject()->findChild<QObject*>("idComp"),
+                                               "progressSelected",
+                                               Q_ARG(QVariant, progress));
+}
 
-    mQmlProgressOk = ok;
+void PageMotorComparison::setQmlMotorParams()
+{
+    if (!mQmlMotorParamsOk) {
+        return;
+    }
+
+    mQmlMotorParamsOk = QMetaObject::invokeMethod(ui->qmlWidget->rootObject()->findChild<QObject*>("idComp"),
+                                                  "motorDataUpdated",
+                                                  Q_ARG(QVariant, QVariant::fromValue(MotorData(&mM1Config, getParamsUi(1)))),
+                                                  Q_ARG(QVariant, QVariant::fromValue(MotorData(&mM2Config, getParamsUi(2)))));
 }

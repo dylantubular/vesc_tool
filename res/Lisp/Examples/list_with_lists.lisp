@@ -1,26 +1,30 @@
-(define name-default "VESC_default.bin")
-(define name-nolim "VESC_no_limits.bin")
+(def name-default "VESC_default.bin")
+(def name-nolim "VESC_no_limits.bin")
 
-(define pkg `(
-            ("46_o_47" . (
-                ("46" . ,name-default)
-                ("46_no_limits" . ,name-nolim)
-                ("46_33k" . "VESC_33k.bin")
-                ("46_0005ohm" . "VESC_0005ohm.bin")
-            ))
-            ("60" . (
-                ("60" . ,name-default)
-                ("60_no_limits" . ,name-nolim)
-            ))
+(def pkg `(
+            ("46_o_47"
+                ("46" ,name-default)
+                ("46_no_limits" ,name-nolim)
+                ("46_33k" "VESC_33k.bin")
+                ("46_0005ohm" "VESC_0005ohm.bin")
+            )
+            ("60"
+                ("60" ,name-default)
+                ("60_no_limits" ,name-nolim)
+            )
 ))
 
-(defun print-fw (index)
-    (let ( (dir (car (ix pkg index)))
-           (fws (cdr (ix pkg index))) )
-        (progn
-            (print (list "Dir:" dir))
-            (map (lambda (x) (print (list "  Target:" (car x) " File:" (cdr x)))) fws)
-            (print " ")
-)))
+; Pad string s to length n with character ch
+(defun pad-str (s n ch)
+    (if (>= (str-len s) n)
+        s
+        (pad-str (str-merge s ch) n ch)
+))
 
-(map print-fw (iota (- (length pkg) 1)))
+(loopforeach hw pkg
+    (progn
+        (print (str-merge "Dir: " (first hw)))
+        (loopforeach fw (rest hw)
+            (print (str-merge "  Target: " (pad-str (first fw) 12 " ") " File: " (second fw))))
+        (print " ")
+))

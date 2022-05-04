@@ -18,6 +18,8 @@
     */
 
 #include <QDateTime>
+#include <QMessageBox>
+#include <QProgressDialog>
 #include "pagelisp.h"
 #include "ui_pagelisp.h"
 #include "utility.h"
@@ -667,7 +669,14 @@ void PageLisp::on_uploadButton_clicked()
 
     VByteArray vb;
     vb.vbAppendUint16(0);
-    vb.append(ui->mainEdit->codeEditor()->toPlainText());
+
+    auto e = qobject_cast<ScriptEditor*>(ui->fileTabs->widget(ui->fileTabs->currentIndex()));
+
+    if (e != nullptr) {
+        vb.append(e->codeEditor()->toPlainText());
+    } else {
+        vb.append(ui->mainEdit->codeEditor()->toPlainText());
+    }
 
     if (vb.at(vb.size() - 1) != '\0') {
         vb.append('\0');
